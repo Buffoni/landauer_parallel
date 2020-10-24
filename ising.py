@@ -100,7 +100,7 @@ class Ising():
         return mag_values, h_ramp
 
 
-@njit(parallel=True, nogil=True)
+@njit(parallel=True)
 def sampleRun(N, h_max, n_steps, T, num_samples):
     W = []
     mag_configs = []
