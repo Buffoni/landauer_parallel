@@ -3,9 +3,9 @@ from numpy.random import rand
 import random
 from numba import int32, int64, float32
 from numba.types import List
-from numba import jitclass, njit, prange
+from numba.experimental import jitclass
+from numba import njit, prange
 from utils import workIntegral
-
 
 spec = [
     ('N', int32),
@@ -19,7 +19,8 @@ spec = [
 
 @jitclass(spec)
 class Ising():
-    ''' Simulating the 2D Ising model '''
+    """ Simulating the 2D Ising model """
+
     def __init__(self, N, temp, J, h, config):
         self.N = N
         self.T = temp
@@ -29,7 +30,7 @@ class Ising():
         self.config = config
 
     def energy(self):
-        '''Energy of a given configuration'''
+        """Energy of a given configuration"""
         energy = 0
         for i in range(len(self.config)):
             for j in range(len(self.config)):
@@ -40,7 +41,7 @@ class Ising():
         return energy / 4
 
     def magnetization(self):
-        '''Magnetization of a given configuration'''
+        """Magnetization of a given configuration"""
         mag = 0
         for i in range(len(self.config)):
             for j in range(len(self.config)):
@@ -49,9 +50,9 @@ class Ising():
 
     # monte carlo moves
     def mcmove(self):
-        ''' This is to execute the monte carlo moves using
+        """ This is to execute the monte carlo moves using
         Metropolis algorithm such that detailed
-        balance condition is satisified'''
+        balance condition is satisified"""
         beta = 1.0 / self.T
         for i in range(self.N):
             for j in range(self.N):
@@ -66,7 +67,7 @@ class Ising():
                 self.config[a][b] = s
 
     def evolve(self, n_iter, h_values=None):
-        ''' This module simulates the evolution of Ising model'''
+        """ This module simulates the evolution of Ising model"""
         magnetizations = np.zeros(n_iter)
         for i in range(n_iter):
             if h_values is not None:
@@ -81,7 +82,7 @@ class Ising():
             self.mcmove()
 
     def reset_protocol(self, n_iter=1000, hmax=2):
-        ''' This module simulates the reset-to-one protocol'''
+        """ This module simulates the reset-to-one protocol"""
         starting_h = self.h
         # Initial state is thermalized
         self.thermalize()
@@ -102,15 +103,15 @@ class Ising():
 
 @njit(parallel=True)
 def sampleRun(N, h_max, n_steps, T, num_samples):
-    W = []
-    mag_configs = []
+    W = np.zeros(num_samples)
+    mag_configs = np.zeros((num_samples, 2 * n_steps))
     M = 0
     for i in prange(num_samples):
-        initial_config = [[2 * random.randint(0, 1) - 1 for i in range(N)] for j in range(N)]
+        initial_config = [[2 * random.randint(0, 1) - 1 for _ in range(N)] for _ in range(N)]
         rm = Ising(N, T, -1, 0, initial_config)
         mag_values, h_ramp = rm.reset_protocol(n_steps, h_max)
-        mag_configs.append(mag_values)
-        W.append(workIntegral(mag_values, h_ramp))
+        mag_configs[i, :] = mag_values
+        W[i] = workIntegral(mag_values, h_ramp)
         M += rm.magnetization()
 
     return W, mag_configs, M

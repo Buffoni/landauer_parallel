@@ -11,6 +11,7 @@ h_max = config['h_max']
 n_steps = config['n_steps']
 T = config['temp']
 
+
 for N in n_range:
     start = time.time()
     W, mag_trajectories, M = sampleRun(N, h_max, n_steps, T, num_samples)
